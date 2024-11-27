@@ -1,6 +1,6 @@
 <script setup>
-  import { ref } from 'vue'
-  import { ApiService } from "@/services/ApiService.js"
+  import { ref, onMounted } from 'vue'
+  import { ApiService, FetchEventsTeams } from "@/services/ApiService.js"
 
   let retrieved = ref(false)
 
@@ -8,7 +8,7 @@
     try {
       let selectedRoute = `${route.value}${event.value}${team.value}${team2.value}${team3.value}`
       console.log(selectedRoute)
-      apiResponse.value = 'Fetching Data...'
+      apiResponse.value = 'fetching'
       const response = await ApiService.request(selectedRoute)
       const data = await response.json()
       apiResponse.value = processData(data)
@@ -77,80 +77,115 @@
   const team2 = ref('')
   const team3 = ref('')
   const apiResponse = ref(null)
+  const fetchedEventsTeams = ref(null)
+
+  async function collectData() {
+    try {
+      fetchedEventsTeams.value = await FetchEventsTeams.request()
+    }catch (error) {
+      console.error('Error fetching data:', error)
+    }
+  }
+
+  onMounted(() => {
+    collectData()
+  })
 </script>
 
 <template>
   <div class="h-screen">
-    <form @submit.prevent="fetchData">
-      <div class="flex flex-row gap-2">
-        <Select
-            v-model="route"
-            :options="routes"
-            optionLabel="text"
-            optionValue="route"
-            class="w-44"
-            placeholder="Select a Route"
-        />
-        <Select
-            v-model="event"
-            :options="events"
-            optionLabel="text"
-            optionValue="route"
-            class="w-44"
-            placeholder="Select an Event"
-        />
-        <Select
-            v-model="team"
-            :options="teams"
-            optionLabel="text"
-            optionValue="route"
-            class="w-44"
-            placeholder="Select a Team"
-        />
-        <Select
-            v-if="route === '/compare/graph'"
-            v-model="team2"
-            :options="teams"
-            optionLabel="text"
-            optionValue="route"
-            class="w-44"
-            placeholder="Select a Team"
-        />
-        <Select
-            v-if="route === '/compare/graph'"
-            v-model="team3"
-            :options="teamsOther"
-            optionLabel="text"
-            optionValue="route"
-            class="w-44"
-            placeholder="Select a Team"
-        />
-        <Button
-            label="Submit"
-            type="submit"
-            class="w-28"
-        />
-      </div>
-    </form>
+    <Card class="w-fit h-56 mx-auto bg-gray-950">
+      <template #content>
+        <form  @submit.prevent="fetchData">
+          <div class="flex flex-row">
+            <Select
+                v-model="route"
+                :options="routes"
+                optionLabel="text"
+                optionValue="route"
+                class="w-44 mr-2"
+                placeholder="Select a Route"
+            />
+            <Select
+                v-model="event"
+                :options="events"
+                optionLabel="text"
+                optionValue="route"
+                class="w-44 mr-2"
+                placeholder="Select an Event"
+            />
+            <Select
+                filter
+                v-model="team"
+                :options="teams"
+                optionLabel="text"
+                optionValue="route"
+                class="w-44 mr-2"
+                placeholder="Select a Team"
+            />
+            <Select
+                v-if="route === '/compare/graph'"
+                filter
+                v-model="team2"
+                :options="teams"
+                optionLabel="text"
+                optionValue="route"
+                class="w-44 mr-2"
+                placeholder="Select a Team"
+            />
+            <Select
+                v-if="route !== '/compare/graph'"
+                disabled
+                class="w-44 mr-2"
+                placeholder="Select a Team"
+            />
+            <Select
+                v-if="route === '/compare/graph'"
+                filter show-clear
+                v-model="team3"
+                :options="teamsOther"
+                optionLabel="text"
+                optionValue="route"
+                class="w-44 mr-2"
+                placeholder="Select a Team"
+            />
+            <Select
+                v-if="route !== '/compare/graph'"
+                disabled
+                class="w-44 mr-2"
+                placeholder="Select a Team"
+            />
+            <Button
+                class="w-28"
+                label="Submit"
+                type="submit"
+            />
+          </div>
+        </form>
+        <Divider />
+        <Message class="font-sans" severity="success">Selected Route: {{ route }}{{ event }}{{ team }}{{ team2 }}{{ team3 }}</Message>
+        <Divider />
+        <ProgressBar class="h-2 w-auto" mode="indeterminate" v-if="apiResponse === 'fetching'"></ProgressBar>
+      </template>
+    </Card>
     <div>
-      <p>Route: {{ route }}{{ event }}{{ team }}{{ team2 }}{{ team3 }}</p>
-      <p v-if="!retrieved">API Response: {{ apiResponse }}</p>
-<!--      <p v-if="retrieved">API Response: {{ apiResponse.general }}</p>-->
-<!--      <p v-if="retrieved">API Response: {{ apiResponse.masses }}</p>-->
-      <DataTable v-if="retrieved" :value="apiResponse.general" tableStyle="min-width: 50rem">
-        <Column field="team" header="Team"></Column>
-        <Column field="x" header="X"></Column>
-        <Column field="y" header="Y"></Column>
-        <Column field="auto_score" header="Auto Pieces Scored"></Column>
-        <Column field="label" header="Label"></Column>
-      </DataTable>
-      <DataTable v-if="retrieved" :value="apiResponse.masses" tableStyle="min-width: 50rem">
-        <Column field="team" header="Team"></Column>
-        <Column field="x" header="Average X"></Column>
-        <Column field="y" header="Average Y"></Column>
-        <Column field="auto_score" header="Average Auto Pieces Scored"></Column>
-        <Column field="label" header="Label"></Column>
-      </DataTable>
+      <p v-if="retrieved">API Response: {{ apiResponse.general }}</p>
+      <p v-if="retrieved">API Response: {{ apiResponse.masses }}</p>
+      <p>{{ fetchedEventsTeams }}</p>
+<!--      <DataTable v-if="retrieved" :value="apiResponse.general" tableStyle="min-width: 50rem">-->
+<!--        <Column field="team" header="Team"></Column>-->
+<!--        <Column field="x" header="X"></Column>-->
+<!--        <Column field="y" header="Y"></Column>-->
+<!--        <Column field="auto_score" header="Auto Pieces Scored"></Column>-->
+<!--        <Column field="label" header="Label"></Column>-->
+<!--      </DataTable>-->
+<!--      <DataTable v-if="retrieved" :value="apiResponse.masses" tableStyle="min-width: 50rem">-->
+<!--        <Column field="team" header="Team"></Column>-->
+<!--        <Column field="x" header="Average X"></Column>-->
+<!--        <Column field="y" header="Average Y"></Column>-->
+<!--        <Column field="auto_score" header="Average Auto Pieces Scored"></Column>-->
+<!--        <Column field="label" header="Label"></Column>-->
+<!--      </DataTable>-->
     </div>
   </div>
 </template>
