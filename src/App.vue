@@ -1,104 +1,130 @@
 <script setup>
-  import { ref, onMounted } from 'vue'
-  import { ApiService, FetchEventsTeams } from "@/services/ApiService.js"
+import {onMounted, ref} from 'vue'
+import {ApiService, getScouting, tbaNames} from "@/services/ApiService.js"
+import Column from "primevue/column"
+import {useToast} from 'primevue/usetoast';
 
-  let retrieved = ref(false)
+const toast = useToast()
+
+  const retrieved = ref(false)
+  const retrieving = ref(false)
+  const isError = ref('')
+  const dataType = ref('')
+  const imageUrl = ref('')
 
   async function fetchData() {
     try {
+      retrieved.value = false
       let selectedRoute = `${route.value}${event.value}${team.value}${team2.value}${team3.value}`
+      dataType.value = route.value
       console.log(selectedRoute)
-      apiResponse.value = 'fetching'
+      retrieving.value = true
       const response = await ApiService.request(selectedRoute)
-      const data = await response.json()
-      apiResponse.value = processData(data)
+      if(dataType.value === '/data'){
+        const data = await response.json()
+        generalData.value = Object.keys(data.general.auto_score).map(key => ({
+          x: data.general.x[key],
+          y: data.general.y[key],
+          auto_score: data.general.auto_score[key],
+          team: data.general.team[key],
+          label: data.general.label[key]
+        }));
+        massesData.value = Object.keys(data.masses.auto_score).map(key => ({
+          x: parseFloat(data.masses.x[key].toFixed(1)),
+          y: parseFloat(data.masses.y[key].toFixed(1)),
+          auto_score: parseFloat(data.masses.auto_score[key].toFixed(1)),
+          team: parseFloat(data.masses.team[key].toFixed(1)),
+          label: parseFloat(data.masses.label[key].toFixed(1))
+        }));
+      }
+      else {
+        const data = await response.blob()
+        imageUrl.value = URL.createObjectURL(data);
+      }
       console.log("retrieved")
+      retrieving.value = false
       retrieved.value = true
     } catch (error) {
       console.error('Error fetching data:', error)
-      apiResponse.value = "Oh no! Something went wrong, is the route correct?"
+      retrieving.value = false
+      retrieved.value = false
+      isError.value = "Oh no! Something went wrong, is the route correct?"
     }
   }
 
-  function processData(data) {
-    const general = [];
-    const masses = [];
-
-    // Process the general and masses data
-    for (const section of ['general', 'masses']) {
-      const sectionData = data[section];
-
-      // Determine the target array (general or masses)
-      const targetArray = section === 'general' ? general : masses;
-
-      // Combine the data into objects for each key
-      const length = Object.keys(sectionData.auto_score).length; // Assuming all arrays have the same length
-
-      for (let i = 0; i < length; i++) {
-        targetArray.push({
-          x: sectionData.x[i],
-          y: sectionData.y[i],
-          auto_score: sectionData.auto_score[i],
-          team: sectionData.team[i],
-          label: sectionData.label[i]
-        });
-      }
-    }
-
-    return { general, masses };
-  }
-
-  const routes = ([
-    {route: '/data', text: 'data'},
-    {route: '/graph', text: 'graph'},
-    {route: '/compare/graph', text: 'compare'}
+  const routes = ref([
+    {route: '/data', text: 'Data'},
+    {route: '/graph', text: 'Graph'},
+    {route: '/compare/graph', text: 'Compare'}
   ])
-  const events = ([
-    {route: '/events', text: 'All 2024 Events'},
-    {route: '/2024wila', text: 'Seven Rivers Regional'},
-    {route: '/2024cttd', text: 'CowTown ThrowDown'}
-  ])
-  const teams = ([
-    {route: '/frc1710', text: '1710'},
-    {route: '/frc1730', text: '1730'},
-    {route: '/frc1986', text: '1986'},
-    {route: '/frc1987', text: '1987'}
-  ])
-  const teamsOther = ([
-    {route: '', text: ''},
-    {route: '/frc1710', text: '1710'},
-    {route: '/frc1730', text: '1730'},
-    {route: '/frc1986', text: '1986'},
-    {route: '/frc1987', text: '1987'}
-  ])
+  const events = ref('')
+  const teams = ref('')
+
   const route = ref('')
-  const event = ref('')
+  const event = ref('/events')
   const team = ref('')
   const team2 = ref('')
   const team3 = ref('')
-  const apiResponse = ref(null)
-  const fetchedEventsTeams = ref(null)
+  const generalData = ref(null)
+  const massesData = ref(null)
 
-  async function collectData() {
-    try {
-      fetchedEventsTeams.value = await FetchEventsTeams.request()
-    }catch (error) {
-      console.error('Error fetching data:', error)
+  function routeChange() {
+    if (route.value !== '/compare/graph') {
+      team2.value = ''
+      team3.value = ''
+      isError.value = ''
     }
+  }
+  function onChange() {
+    isError.value = ''
+  }
+
+  async function scoutingApi() {
+    const response = await getScouting.request()
+    const data = await response.json()
+    const eventsData = data.events
+    const teamsData = data.teams
+    let newEvents = []
+    let newTeams = []
+    eventsData.forEach(e => {
+        if(e !== '2024practice') {
+          if(e !== '2024week0') {
+            newEvents.push(e)
+          }
+      }
+    })
+    teamsData.forEach(e => {
+      newTeams.push({route: '/frc'+e,text: e})
+    })
+    newEvents = await named(newEvents)
+    newEvents.sort((a, b) => a.text.localeCompare(b.text))
+    events.value = newEvents
+    teams.value = newTeams
+    teams.value.sort((a, b) => a.text - b.text)
+    events.value.unshift({route: '/events', text: 'All 2024 Events'})
+  }
+
+  async function named(data) {
+    return await tbaNames.request(data)
   }
 
   onMounted(() => {
-    collectData()
+    scoutingApi()
   })
+
+  const show = () => {
+    toast.add({ severity: 'info', summary: 'Info', detail: 'Verify that the team attended the event, as not all teams have attended every event.', life: 5000 });
+  };
 </script>
 
 <template>
-  <div class="h-screen">
-    <Card class="w-fit h-56 mx-auto bg-gray-950">
+  <div class="h-full">
+    <Card class="w-fit mx-auto mb-4" style="height: 176px">
       <template #content>
         <form  @submit.prevent="fetchData">
           <div class="flex flex-row">
             <Select
+                @change="routeChange"
                 v-model="route"
                 :options="routes"
                 optionLabel="text"
@@ -107,6 +133,9 @@
                 placeholder="Select a Route"
             />
             <Select
+                filter
+                v-if="events !== ''"
+                @change="onChange"
                 v-model="event"
                 :options="events"
                 optionLabel="text"
@@ -115,6 +144,8 @@
                 placeholder="Select an Event"
             />
             <Select
+                v-if="teams !== ''"
+                @change="onChange"
                 filter
                 v-model="team"
                 :options="teams"
@@ -124,7 +155,8 @@
                 placeholder="Select a Team"
             />
             <Select
-                v-if="route === '/compare/graph'"
+                @change="onChange"
+                v-if="route === '/compare/graph' && teams !== ''"
                 filter
                 v-model="team2"
                 :options="teams"
@@ -134,58 +166,89 @@
                 placeholder="Select a Team"
             />
             <Select
-                v-if="route !== '/compare/graph'"
+                v-if="route !== '/compare/graph' && teams !== ''"
                 disabled
                 class="w-44 mr-2"
                 placeholder="Select a Team"
             />
             <Select
-                v-if="route === '/compare/graph'"
+                @change="onChange"
+                v-if="route === '/compare/graph' && teams !== ''"
                 filter show-clear
                 v-model="team3"
-                :options="teamsOther"
+                :options="teams"
                 optionLabel="text"
                 optionValue="route"
                 class="w-44 mr-2"
                 placeholder="Select a Team"
             />
             <Select
-                v-if="route !== '/compare/graph'"
+                v-if="route !== '/compare/graph' && teams !== ''"
                 disabled
                 class="w-44 mr-2"
                 placeholder="Select a Team"
             />
+            <Select
+                v-if="teams === '' && events === ''"
+                loading
+                class="mr-2"
+                style="width: 728px"
+                placeholder="Loading..."
+            />
             <Button
+                v-if="event === '/events'"
                 class="w-28"
                 label="Submit"
                 type="submit"
             />
+            <Button
+                v-if="event !== '/events'"
+                style="width: 72px"
+                label="Submit"
+                type="submit"
+            />
+            <Toast position="bottom-left"/>
+            <Badge v-if="event !== '/events'" severity="info" class="hover:cursor-pointer ml-4 my-auto" @click="show" value="!"></Badge>
           </div>
         </form>
-        <Divider />
-        <Message class="font-sans" severity="success">Selected Route: {{ route }}{{ event }}{{ team }}{{ team2 }}{{ team3 }}</Message>
-        <Divider />
-        <ProgressBar class="h-2 w-auto" mode="indeterminate" v-if="apiResponse === 'fetching'"></ProgressBar>
+        <ProgressBar style="height: 8px; margin-top: 16px; margin-bottom: 16px" :value="0" v-if="!retrieving"></ProgressBar>
+        <ProgressBar style="height: 8px; margin-top: 16px; margin-bottom: 16px" mode="indeterminate" v-if="retrieving"></ProgressBar>
+        <Message v-if="isError === ''" class="font-sans" severity="success">Selected Route: {{ route }}{{ event }}{{ team }}{{ team2 }}{{ team3 }}</Message>
+        <Message v-if="isError !== ''" class="font-sans" severity="error">{{ isError }}</Message>
       </template>
     </Card>
-    <div>
-      <p v-if="retrieved">API Response: {{ apiResponse.general }}</p>
-      <p v-if="retrieved">API Response: {{ apiResponse.masses }}</p>
-      <p>{{ fetchedEventsTeams }}</p>
-<!--      <DataTable v-if="retrieved" :value="apiResponse.general" tableStyle="min-width: 50rem">-->
-<!--        <Column field="team" header="Team"></Column>-->
-<!--        <Column field="x" header="X"></Column>-->
-<!--        <Column field="y" header="Y"></Column>-->
-<!--        <Column field="auto_score" header="Auto Pieces Scored"></Column>-->
-<!--        <Column field="label" header="Label"></Column>-->
-<!--      </DataTable>-->
-<!--      <DataTable v-if="retrieved" :value="apiResponse.masses" tableStyle="min-width: 50rem">-->
-<!--        <Column field="team" header="Team"></Column>-->
-<!--        <Column field="x" header="Average X"></Column>-->
-<!--        <Column field="y" header="Average Y"></Column>-->
-<!--        <Column field="auto_score" header="Average Auto Pieces Scored"></Column>-->
-<!--        <Column field="label" header="Label"></Column>-->
-<!--      </DataTable>-->
-    </div>
+      <div v-if="retrieved" class="w-full mb-4 flex justify-center">
+        <Splitter v-if="dataType === '/data'" class="w-fit h-fit">
+          <SplitterPanel>
+            <Card class="h-full">
+              <template #title>General</template>
+              <template #content>
+                <DataTable :value="generalData">
+                  <Column field="team" header="Team"></Column>
+                  <Column field="x" header="X"></Column>
+                  <Column field="y" header="Y"></Column>
+                  <Column field="auto_score" header="Auto Pieces Scored"></Column>
+                  <Column field="label" header="Label"></Column>
+                </DataTable>
+              </template>
+            </Card>
+          </SplitterPanel>
+          <SplitterPanel>
+            <Card class="h-full">
+              <template #title>Masses</template>
+              <template #content>
+                <DataTable :value="massesData">
+                  <Column field="team" header="Team"></Column>
+                  <Column field="x" header="Average X"></Column>
+                  <Column field="y" header="Average Y"></Column>
+                  <Column field="auto_score" header="Average Auto Pieces Scored"></Column>
+                  <Column field="label" header="Label"></Column>
+                </DataTable>
+              </template>
+            </Card>
+          </SplitterPanel>
+        </Splitter>
+        <img v-if="dataType !== '/data'" :src="imageUrl" alt="Fetched Image" />
+      </div>
   </div>
 </template>

@@ -1,14 +1,25 @@
 export const ApiService = {
   async request(route) {
-    console.log(route)
     return await fetch('https://micro.apisb.me' + route)
   }
 }
 
-export const FetchEventsTeams = {
+export const getScouting = {
   async request() {
-    const events = await fetch('https://team1710scouting.vercel.app/api/key/event')
-    const teams = await fetch('https://team1710scouting.vercel.app/api/key/team')
-    return { teams: teams.json(), events: events.json() }
+    return await fetch('https://micro.apisb.me/scoutingapi')
+  }
+}
+
+export const tbaNames = {
+  async request(data) {
+    const apiKey = import.meta.env.VITE_API_KEY
+    const response = await fetch(`https://www.thebluealliance.com/api/v3/events/2024/simple?X-TBA-Auth-Key=${apiKey}`)
+    const events = await response.json()
+    let newEvents = []
+    data.forEach(e => {
+      const matchingObject = events.find(item => item.key === e);
+      newEvents.push({route: "/"+e, text: matchingObject.name})
+    })
+    return newEvents
   }
 }
