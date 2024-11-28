@@ -20,8 +20,8 @@ const toast = useToast()
       if(newTeam === null){
         newTeam = ''
       }
-      let selectedRoute = `${route.value}${event.value}${team.value}${team2.value}${newTeam}`
-      dataType.value = route.value
+      let selectedRoute = `${route.value}${route2.value}${event.value}${team.value}${team2.value}${newTeam}`
+      dataType.value = route2.value
       console.log('selectedRoute', selectedRoute)
       retrieving.value = true
       const response = await ApiService.request({route: selectedRoute, dev: dev.value})
@@ -58,6 +58,9 @@ const toast = useToast()
   }
 
   const routes = ref([
+    {route: '/auto', text: 'Auto'},
+  ])
+  const routes2 = ref([
     {route: '/data', text: 'Data'},
     {route: '/graph', text: 'Graph'},
     {route: '/compare/graph', text: 'Compare'}
@@ -65,7 +68,8 @@ const toast = useToast()
   const events = ref('')
   const teams = ref('')
 
-  const route = ref('')
+  const route = ref('/auto')
+  const route2 = ref('')
   const event = ref('/events')
   const team = ref('')
   const team2 = ref('')
@@ -74,7 +78,7 @@ const toast = useToast()
   const massesData = ref(null)
 
   function routeChange() {
-    if (route.value !== '/compare/graph') {
+    if (route2.value !== '/compare/graph') {
       team2.value = ''
       team3.value = null
       isError.value = ''
@@ -142,7 +146,7 @@ const showDev = () => {
         <form  @submit.prevent="fetchData">
           <div class="flex flex-row">
             <Select
-                @change="routeChange"
+                @change="onChange"
                 v-model="route"
                 :options="routes"
                 optionLabel="text"
@@ -151,8 +155,17 @@ const showDev = () => {
                 placeholder="Select a Route"
             />
             <Select
+                @change="routeChange"
+                v-model="route2"
+                :options="routes2"
+                optionLabel="text"
+                optionValue="route"
+                class="w-44 mr-2"
+                placeholder="Select a Route"
+            />
+            <Select
                 filter
-                v-if="events !== ''"
+                v-if="events !== '' && event === '/events'"
                 @change="onChange"
                 v-model="event"
                 :options="events"
@@ -161,6 +174,20 @@ const showDev = () => {
                 class="w-44 mr-2"
                 placeholder="Select an Event"
             />
+            <Select
+                filter
+                v-if="events !== '' && event !== '/events'"
+                @change="onChange"
+                v-model="event"
+                :options="events"
+                optionLabel="text"
+                optionValue="route"
+                class="mr-2"
+                style="width: 144px"
+                placeholder="Select an Event"
+            />
+            <Toast position="bottom-left"/>
+            <Badge v-if="event !== '/events' && teams !== '' && events !== ''" severity="info" class="hover:cursor-pointer mr-2 my-auto" @click="show" value="!"></Badge>
             <Select
                 v-if="teams !== ''"
                 @change="onChange"
@@ -174,7 +201,7 @@ const showDev = () => {
             />
             <Select
                 @change="onChange"
-                v-if="route === '/compare/graph' && teams !== ''"
+                v-if="route2 === '/compare/graph' && teams !== ''"
                 filter
                 v-model="team2"
                 :options="teams"
@@ -184,14 +211,14 @@ const showDev = () => {
                 placeholder="Select a Team"
             />
             <Select
-                v-if="route !== '/compare/graph' && teams !== ''"
+                v-if="route2 !== '/compare/graph' && teams !== ''"
                 disabled
                 class="w-44 mr-2"
                 placeholder="Select a Team"
             />
             <Select
                 @change="onChange"
-                v-if="route === '/compare/graph' && teams !== ''"
+                v-if="route2 === '/compare/graph' && teams !== ''"
                 filter show-clear
                 v-model="team3"
                 :options="teams"
@@ -201,7 +228,7 @@ const showDev = () => {
                 placeholder="Select a Team"
             />
             <Select
-                v-if="route !== '/compare/graph' && teams !== ''"
+                v-if="route2 !== '/compare/graph' && teams !== ''"
                 disabled
                 class="w-44 mr-2"
                 placeholder="Select a Team"
@@ -214,24 +241,15 @@ const showDev = () => {
                 placeholder="Loading..."
             />
             <Button
-                v-if="event === '/events'"
                 class="w-28"
                 label="Submit"
                 type="submit"
             />
-            <Button
-                v-if="event !== '/events'"
-                style="width: 72px"
-                label="Submit"
-                type="submit"
-            />
-            <Toast position="bottom-left"/>
-            <Badge v-if="event !== '/events'" severity="info" class="hover:cursor-pointer ml-4 my-auto" @click="show" value="!"></Badge>
           </div>
         </form>
         <ProgressBar style="height: 8px; margin-top: 16px; margin-bottom: 16px" :value="0" v-if="!retrieving"></ProgressBar>
         <ProgressBar style="height: 8px; margin-top: 16px; margin-bottom: 16px" mode="indeterminate" v-if="retrieving"></ProgressBar>
-        <Message v-if="isError === ''" class="font-sans" severity="success">Selected Route: {{ route }}{{ event }}{{ team }}{{ team2 }}{{ team3 }}</Message>
+        <Message v-if="isError === ''" class="font-sans" severity="success">Selected Route: {{ route }}{{ route2 }}{{ event }}{{ team }}{{ team2 }}{{ team3 }}</Message>
         <Message v-if="isError !== ''" class="font-sans" severity="error">{{ isError }}</Message>
       </template>
     </Card>
