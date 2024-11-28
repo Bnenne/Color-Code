@@ -1,12 +1,20 @@
 export const ApiService = {
-  async request(route) {
-    return await fetch('https://micro.apisb.me' + route)
+  async request(data) {
+    let endpoint = 'https://micro.apisb.me'
+    if (data.dev === true){
+      endpoint = 'http://127.0.0.1:5000'
+    }
+    return await fetch(endpoint + data.route)
   }
 }
 
 export const getScouting = {
-  async request() {
-    return await fetch('https://micro.apisb.me/scoutingapi')
+  async request(dev) {
+    let endpoint = 'https://micro.apisb.me'
+    if (dev === true){
+      endpoint = 'http://127.0.0.1:5000'
+    }
+    return await fetch(endpoint+'/scoutingapi')
   }
 }
 

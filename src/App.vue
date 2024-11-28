@@ -11,15 +11,20 @@ const toast = useToast()
   const isError = ref('')
   const dataType = ref('')
   const imageUrl = ref('')
+  const dev = ref(false)
 
   async function fetchData() {
     try {
       retrieved.value = false
-      let selectedRoute = `${route.value}${event.value}${team.value}${team2.value}${team3.value}`
+      let newTeam = team3.value
+      if(newTeam === null){
+        newTeam = ''
+      }
+      let selectedRoute = `${route.value}${event.value}${team.value}${team2.value}${newTeam}`
       dataType.value = route.value
-      console.log(selectedRoute)
+      console.log('selectedRoute', selectedRoute)
       retrieving.value = true
-      const response = await ApiService.request(selectedRoute)
+      const response = await ApiService.request({route: selectedRoute, dev: dev.value})
       if(dataType.value === '/data'){
         const data = await response.json()
         generalData.value = Object.keys(data.general.auto_score).map(key => ({
@@ -64,14 +69,14 @@ const toast = useToast()
   const event = ref('/events')
   const team = ref('')
   const team2 = ref('')
-  const team3 = ref('')
+  const team3 = ref(null)
   const generalData = ref(null)
   const massesData = ref(null)
 
   function routeChange() {
     if (route.value !== '/compare/graph') {
       team2.value = ''
-      team3.value = ''
+      team3.value = null
       isError.value = ''
     }
   }
@@ -80,7 +85,9 @@ const toast = useToast()
   }
 
   async function scoutingApi() {
-    const response = await getScouting.request()
+    teams.value = ''
+    events.value = ''
+    const response = await getScouting.request(dev.value)
     const data = await response.json()
     const eventsData = data.events
     const teamsData = data.teams
@@ -108,17 +115,28 @@ const toast = useToast()
     return await tbaNames.request(data)
   }
 
+  function devChange() {
+    scoutingApi()
+  }
+
   onMounted(() => {
     scoutingApi()
   })
 
   const show = () => {
     toast.add({ severity: 'info', summary: 'Info', detail: 'Verify that the team attended the event, as not all teams have attended every event.', life: 5000 });
-  };
+  }
+const showDev = () => {
+  toast.add({ severity: 'info', summary: 'Info', detail: "This will turn on dev mode, if you're not a dev this will break the everything.", life: 5000 });
+}
 </script>
 
 <template>
   <div class="h-full">
+    <div class="flex flex-row absolute p-4 top-0 left-0">
+      <ToggleSwitch @change="devChange" v-model="dev" />
+      <Badge severity="info" class="hover:cursor-pointer ml-4 my-auto" @click="showDev" value="!"></Badge>
+    </div>
     <Card class="w-fit mx-auto mb-4" style="height: 176px">
       <template #content>
         <form  @submit.prevent="fetchData">

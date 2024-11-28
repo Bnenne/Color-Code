@@ -14,10 +14,11 @@ import Message from 'primevue/message'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Toast from 'primevue/toast'
-import ToastService from "primevue/toastservice";
-import Badge from "primevue/badge";
-import Splitter from 'primevue/splitter';
-import SplitterPanel from 'primevue/splitterpanel';
+import ToastService from "primevue/toastservice"
+import Badge from "primevue/badge"
+import Splitter from 'primevue/splitter'
+import SplitterPanel from 'primevue/splitterpanel'
+import ToggleSwitch from "primevue/toggleswitch";
 
 import './index.css'
 
@@ -35,6 +36,7 @@ app.component('Toast', Toast)
 app.component('Badge', Badge)
 app.component('Splitter', Splitter)
 app.component('SplitterPanel', SplitterPanel)
+app.component('ToggleSwitch', ToggleSwitch)
 
 app.use(PrimeVue, {
     theme: {
