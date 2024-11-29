@@ -19,9 +19,12 @@ export const getScouting = {
 }
 
 export const tbaNames = {
-  async request(data) {
-    const apiKey = import.meta.env.VITE_API_KEY
-    const response = await fetch(`https://www.thebluealliance.com/api/v3/events/2024/simple?X-TBA-Auth-Key=${apiKey}`)
+  async request(data, dev) {
+    let endpoint = 'https://micro.apisb.me'
+    if (dev === true){
+      endpoint = 'http://127.0.0.1:5000'
+    }
+    const response = await fetch(endpoint+'/tba')
     const events = await response.json()
     let newEvents = []
     data.forEach(e => {

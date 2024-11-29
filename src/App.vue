@@ -116,7 +116,7 @@ const toast = useToast()
   }
 
   async function named(data) {
-    return await tbaNames.request(data)
+    return await tbaNames.request(data, dev.value)
   }
 
   function devChange() {
