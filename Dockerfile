@@ -23,7 +23,7 @@ FROM nginx:stable-alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 
 # Step 9: Expose the port that Nginx will use
-EXPOSE 80
+EXPOSE 5173
 
 # Step 10: Start Nginx
 CMD ["nginx", "-g", "daemon off;"]
