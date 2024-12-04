@@ -111,15 +111,8 @@ const toast = useToast()
     {route: '/compare/data', text: 'Compare Data'},
     {route: '/compare/graph', text: 'Compare Graph'}
   ])
-  const events = ref([
-    {route: '/events', text: 'All'}
-  ])
-  const teams = ref([
-    {route: '/frc1710', text: '1710'},
-    {route: '/frc1730', text: '1730'},
-    {route: '/frc1986', text: '1986'},
-    {route: '/frc1987', text: '1987'}
-  ])
+  const events = ref('')
+  const teams = ref('')
 
   const route = ref('/auto')
   const route2 = ref('')
