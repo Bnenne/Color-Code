@@ -12,6 +12,8 @@
     return Math.floor(Math.random() * max)
   }
 
+  const meow = 'Benjamin "boykisser" Garcia'
+
   let colorCode = ref()
 
   let colorRef = ref([])
