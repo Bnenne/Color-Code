@@ -12,7 +12,7 @@
     return Math.floor(Math.random() * max)
   }
 
-  const meow = 'Benjamin "boykisser" Garcia'
+  const femboy = 'Benjamin "boykisser" Garcia'
 
   let colorCode = ref()
 
