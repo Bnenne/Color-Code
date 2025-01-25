@@ -18,7 +18,11 @@ import ToastService from "primevue/toastservice"
 import Badge from "primevue/badge"
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import ToggleSwitch from "primevue/toggleswitch";
+import ToggleSwitch from "primevue/toggleswitch"
+import Password from "primevue/password"
+import InputNumber from "primevue/inputnumber"
+import VirtualScroller from 'primevue/virtualscroller'
+import ColorPicker from 'primevue/colorpicker'
 
 import './index.css'
 
@@ -37,6 +41,10 @@ app.component('Badge', Badge)
 app.component('Splitter', Splitter)
 app.component('SplitterPanel', SplitterPanel)
 app.component('ToggleSwitch', ToggleSwitch)
+app.component('Password', Password)
+app.component('InputNumber', InputNumber)
+app.component('VirtualScroller', VirtualScroller)
+app.component('ColorPicker', ColorPicker)
 
 app.use(PrimeVue, {
     theme: {
